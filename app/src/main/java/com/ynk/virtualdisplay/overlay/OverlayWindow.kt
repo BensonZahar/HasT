@@ -20,6 +20,7 @@ import android.view.WindowManager
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
+import com.ynk.virtualdisplay.core.AppScope
 import com.ynk.virtualdisplay.data.repository.ConnectionStatus
 import com.ynk.virtualdisplay.data.repository.IDisplayRepository
 import kotlinx.coroutines.CoroutineScope
@@ -221,7 +222,10 @@ class OverlayWindow(
             override fun onSurfaceTextureDestroyed(st: SurfaceTexture): Boolean {
                 val old = surface
                 surface = null
-                scope.launch(Dispatchers.Main.immediate) {
+                // null: remove() уже вернул дисплей на запасную поверхность. Повторный сброс здесь мог бы
+                // перебить поверхность нового окна, если оно успело подключиться к этому же дисплею.
+                if (old == null) return true
+                AppScope.scope.launch(Dispatchers.Main.immediate) {
                     try {
                         // null -> сервис вернёт дисплею запасную поверхность, игра продолжит работать
                         repository.setDisplaySurface(displayId, null)
@@ -503,6 +507,20 @@ class OverlayWindow(
             wm.removeView(root)
         } catch (e: Exception) {
             Log.w(TAG, "removeView failed", e)
+        }
+        // Дисплей возвращаем на запасную поверхность сразу и в области процесса. Раньше это делал
+        // колбэк TextureView уже после остановки сервиса, когда его корутины отменены, и дисплей оставался
+        // привязан к уничтоженной поверхности (игра шла в фоне, но кадры уходили в никуда).
+        val old = surface
+        surface = null
+        if (old != null) {
+            AppScope.scope.launch(Dispatchers.Main.immediate) {
+                try {
+                    repository.setDisplaySurface(displayId, null)
+                } finally {
+                    old.release()
+                }
+            }
         }
     }
 

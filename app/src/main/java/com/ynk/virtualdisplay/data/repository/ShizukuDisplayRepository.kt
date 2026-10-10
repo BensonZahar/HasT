@@ -30,6 +30,12 @@ class ShizukuDisplayRepository(private val context: Context) : IDisplayRepositor
     override val managedDisplayIds: StateFlow<Set<Int>> = _managedDisplayIds.asStateFlow()
 
     private val bridgeDispatcher = java.util.concurrent.Executors.newSingleThreadExecutor().asCoroutineDispatcher()
+
+    /**
+     * Shell-команды (force-stop, appops, настройка фона) могут идти секундами. На общем потоке они держали бы
+     * в очереди касания и смену поверхностей всех окон, поэтому у них свой пул.
+     */
+    private val shellDispatcher = Dispatchers.IO
     
     private val exceptionHandler = CoroutineExceptionHandler { _, exception ->
         Log.e(TAG, "Coroutine execution failed inside Repository", exception)
@@ -216,6 +222,9 @@ class ShizukuDisplayRepository(private val context: Context) : IDisplayRepositor
             }.toBundle()
             
             val result = svc.startActivity(intent, options)
+            // Сервис возвращает -1 при исключении, а ActivityManager отрицательные коды при отказе запуска.
+            // Раньше это считалось успехом и в журнале писалось «запущен».
+            if (result < 0) throw IllegalStateException("запуск $packageName не удался (код $result)")
             RecentAppHelper.addRecentApp(context, packageName)
             result
         }
@@ -253,7 +262,7 @@ class ShizukuDisplayRepository(private val context: Context) : IDisplayRepositor
 
 
 
-    override suspend fun runShell(command: String): Result<String> = withContext(bridgeDispatcher) {
+    override suspend fun runShell(command: String): Result<String> = withContext(shellDispatcher) {
         runCatching {
             val svc = displayService ?: throw IllegalStateException("Service not connected")
             svc.runShell(command) ?: ""

@@ -1,6 +1,7 @@
 package com.ynk.virtualdisplay.ui.screens
 
 import android.content.Context
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -25,13 +26,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewModelScope
 import com.ynk.virtualdisplay.data.repository.ConnectionStatus
 import com.ynk.virtualdisplay.hassle.HassleConfig
 import com.ynk.virtualdisplay.hassle.HassleController
 import com.ynk.virtualdisplay.hassle.HassleState
 import com.ynk.virtualdisplay.ui.main.MainViewModel
+import com.ynk.virtualdisplay.core.AppScope
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
 private const val PREFS = "hassle_prefs"
@@ -63,11 +66,15 @@ fun HassleScreen(viewModel: MainViewModel) {
             .apply()
     }
 
+    // Операции идут в области процесса, а не ViewModel: если закрыть приложение из «Недавних»
+    // посреди запуска, остальные игры всё равно запустятся.
     fun runOp(block: suspend () -> Unit) {
-        viewModel.viewModelScope.launch {
+        AppScope.scope.launch {
             HassleState.busy = true
             try {
                 block()
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 HassleState.add("Ошибка: ${e.message}")
             } finally {
@@ -93,20 +100,36 @@ fun HassleScreen(viewModel: MainViewModel) {
         )
 
         Text("Какие окна запускать", style = MaterialTheme.typography.titleMedium)
+        // Три равные колонки: подпись не переносится («Hassl / e 3») даже на узком экране или с крупным шрифтом.
+        // Нажатие на подпись тоже переключает галочку.
         for (row in listOf(listOf(1, 2, 3), listOf(4, 5, 6))) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 for (n in row) {
-                    Checkbox(
-                        checked = n in selected,
-                        onCheckedChange = { checked ->
-                            if (checked) {
-                                if (n !in selected) selected.add(n)
-                            } else {
-                                selected.remove(n)
-                            }
-                        },
-                    )
-                    Text("Hassle $n", modifier = Modifier.padding(end = 12.dp))
+                    val toggle = { checked: Boolean ->
+                        if (checked) {
+                            if (n !in selected) selected.add(n)
+                        } else {
+                            selected.remove(n)
+                        }
+                        saveSettings()
+                    }
+                    Row(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clickable { toggle(n !in selected) },
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Checkbox(
+                            checked = n in selected,
+                            onCheckedChange = { toggle(it) },
+                        )
+                        Text(
+                            "Hassle $n",
+                            maxLines = 1,
+                            softWrap = false,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
                 }
             }
         }
@@ -115,7 +138,10 @@ fun HassleScreen(viewModel: MainViewModel) {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             OutlinedTextField(
                 value = width,
-                onValueChange = { width = it.filter(Char::isDigit) },
+                onValueChange = {
+                    width = it.filter(Char::isDigit)
+                    saveSettings()
+                },
                 label = { Text("Ширина") },
                 singleLine = true,
                 keyboardOptions = numberOptions,
@@ -123,7 +149,10 @@ fun HassleScreen(viewModel: MainViewModel) {
             )
             OutlinedTextField(
                 value = height,
-                onValueChange = { height = it.filter(Char::isDigit) },
+                onValueChange = {
+                    height = it.filter(Char::isDigit)
+                    saveSettings()
+                },
                 label = { Text("Высота") },
                 singleLine = true,
                 keyboardOptions = numberOptions,
@@ -133,7 +162,10 @@ fun HassleScreen(viewModel: MainViewModel) {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             OutlinedTextField(
                 value = dpi,
-                onValueChange = { dpi = it.filter(Char::isDigit) },
+                onValueChange = {
+                    dpi = it.filter(Char::isDigit)
+                    saveSettings()
+                },
                 label = { Text("DPI") },
                 singleLine = true,
                 keyboardOptions = numberOptions,
@@ -141,7 +173,10 @@ fun HassleScreen(viewModel: MainViewModel) {
             )
             OutlinedTextField(
                 value = delaySec,
-                onValueChange = { delaySec = it.filter(Char::isDigit) },
+                onValueChange = {
+                    delaySec = it.filter(Char::isDigit)
+                    saveSettings()
+                },
                 label = { Text("Пауза между запусками, с") },
                 singleLine = true,
                 keyboardOptions = numberOptions,
