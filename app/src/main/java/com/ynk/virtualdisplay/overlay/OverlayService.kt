@@ -38,13 +38,22 @@ class OverlayService : Service() {
         private const val EXTRA_WIDTH = "vd_width"
         private const val EXTRA_HEIGHT = "vd_height"
         private const val EXTRA_SLOT = "slot"
+        private const val EXTRA_PACKAGE = "package"
 
         @Volatile
         var running: Boolean = false
             private set
 
         /** Показать окно для дисплея. slot (0,1,2...) определяет место в сетке на экране телефона. */
-        fun show(context: Context, displayId: Int, title: String, vdWidth: Int, vdHeight: Int, slot: Int) {
+        fun show(
+            context: Context,
+            displayId: Int,
+            title: String,
+            vdWidth: Int,
+            vdHeight: Int,
+            slot: Int,
+            packageName: String? = null,
+        ) {
             val intent = Intent(context, OverlayService::class.java).apply {
                 action = ACTION_SHOW
                 putExtra(EXTRA_DISPLAY_ID, displayId)
@@ -52,6 +61,7 @@ class OverlayService : Service() {
                 putExtra(EXTRA_WIDTH, vdWidth)
                 putExtra(EXTRA_HEIGHT, vdHeight)
                 putExtra(EXTRA_SLOT, slot)
+                putExtra(EXTRA_PACKAGE, packageName)
             }
             ContextCompat.startForegroundService(context, intent)
         }
@@ -112,13 +122,14 @@ class OverlayService : Service() {
 
         val title = intent.getStringExtra(EXTRA_TITLE) ?: "Display $displayId"
         val slot = intent.getIntExtra(EXTRA_SLOT, windows.size)
+        val packageName = intent.getStringExtra(EXTRA_PACKAGE)
 
         // Сетка в 2 колонки на экране телефона
         val metrics = resources.displayMetrics
         val margin = (6 * metrics.density).toInt()
         val columns = 2
         val winWidth = (metrics.widthPixels - margin * (columns + 1)) / columns
-        val winHeight = (28 * metrics.density).toInt() + (winWidth.toFloat() * vdHeight / vdWidth).toInt()
+        val winHeight = (OverlayWindow.HEADER_DP * metrics.density).toInt() + (winWidth.toFloat() * vdHeight / vdWidth).toInt()
         val col = slot % columns
         val row = slot / columns
         val x = margin + col * (winWidth + margin)
@@ -136,6 +147,7 @@ class OverlayService : Service() {
             startX = x,
             startY = y,
             startWidthPx = winWidth,
+            packageName = packageName,
             onClosed = { id ->
                 windows.remove(id)
                 if (windows.isEmpty()) stopSelf()

@@ -170,7 +170,7 @@ class HassleController(
                 displayId = id
                 log("  Hassle $slot: дисплей #$displayId ${width}x$height")
             }
-            OverlayService.show(context, displayId, "Hassle $slot", w, h, index)
+            OverlayService.show(context, displayId, "Hassle $slot", w, h, index, pkg)
             prepared.add(Triple(slot, displayId, pkg))
         }
 
@@ -196,7 +196,9 @@ class HassleController(
             val display = findDisplay(slot) ?: continue
             val size = realSize(display)
             if (size.x <= 0 || size.y <= 0) continue
-            OverlayService.show(context, display.displayId, "Hassle $slot", size.x, size.y, shown)
+            OverlayService.show(
+                context, display.displayId, "Hassle $slot", size.x, size.y, shown, HassleConfig.PACKAGES[slot - 1],
+            )
             shown++
         }
         log(if (shown == 0) "Дисплеев Hassle нет. Сначала нажмите «Запустить»." else "Показано окон: $shown")
