@@ -42,8 +42,9 @@ interface IDisplayRepository {
 
     /**
      * 创建虚拟显示器 (挂起函数)
+     * excludeFlags: биты флагов дисплея, которые нужно убрать из набора по умолчанию (настройки -> флаги).
      */
-    suspend fun createDisplay(name: String, width: Int, height: Int, dpi: Int): Result<Int>
+    suspend fun createDisplay(name: String, width: Int, height: Int, dpi: Int, excludeFlags: Int = 0): Result<Int>
 
     /**
      * 释放指定显示器 (挂起函数)

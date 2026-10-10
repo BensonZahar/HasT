@@ -15,6 +15,7 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -55,6 +56,7 @@ fun HassleScreen(viewModel: MainViewModel) {
     var height by remember { mutableStateOf(prefs.getString("height", "720") ?: "720") }
     var dpi by remember { mutableStateOf(prefs.getString("dpi", "240") ?: "240") }
     var delaySec by remember { mutableStateOf(prefs.getString("delay", "6") ?: "6") }
+    var sysDecor by remember { mutableStateOf(prefs.getBoolean("sysdecor", false)) }
 
     fun saveSettings() {
         prefs.edit()
@@ -63,6 +65,7 @@ fun HassleScreen(viewModel: MainViewModel) {
             .putString("height", height)
             .putString("dpi", dpi)
             .putString("delay", delaySec)
+            .putBoolean("sysdecor", sysDecor)
             .apply()
     }
 
@@ -184,6 +187,24 @@ fun HassleScreen(viewModel: MainViewModel) {
             )
         }
 
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text("Системный интерфейс на дисплеях", style = MaterialTheme.typography.bodyMedium)
+                Text(
+                    "Выключено: на дисплеях нет статус-бара, навигации и лаунчера (рекомендуется, иначе на MIUI " +
+                        "может ломаться экран «Недавние»). Действует на новые дисплеи: после смены нажмите «Остановить всё».",
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            }
+            Switch(
+                checked = sysDecor,
+                onCheckedChange = {
+                    sysDecor = it
+                    saveSettings()
+                },
+            )
+        }
+
         Button(
             enabled = !HassleState.busy,
             modifier = Modifier.fillMaxWidth(),
@@ -199,7 +220,7 @@ fun HassleScreen(viewModel: MainViewModel) {
                     HassleState.add("Нет связи с Shizuku-сервисом. Запустите Shizuku и перезайдите в приложение.")
                 } else {
                     val slots = selected.sorted()
-                    runOp { controller.start(slots, w, h, d, pause, HassleState::add) }
+                    runOp { controller.start(slots, w, h, d, pause, sysDecor, HassleState::add) }
                 }
             },
         ) {

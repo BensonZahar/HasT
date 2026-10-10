@@ -174,10 +174,10 @@ class ShizukuDisplayRepository(private val context: Context) : IDisplayRepositor
         }
     }
 
-    override suspend fun createDisplay(name: String, width: Int, height: Int, dpi: Int): Result<Int> = withContext(bridgeDispatcher) {
+    override suspend fun createDisplay(name: String, width: Int, height: Int, dpi: Int, excludeFlags: Int): Result<Int> = withContext(bridgeDispatcher) {
         runCatching {
             val svc = displayService ?: throw IllegalStateException("Service not connected")
-            val displayId = svc.createVirtualDisplay(name, width, height, dpi, null, buildDefaultFlags())
+            val displayId = svc.createVirtualDisplay(name, width, height, dpi, null, buildDefaultFlags() and excludeFlags.inv())
             refreshManagedDisplays()
             displayId
         }

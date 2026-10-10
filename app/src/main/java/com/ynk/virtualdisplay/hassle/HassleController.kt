@@ -11,6 +11,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import com.ynk.virtualdisplay.data.model.VIRTUAL_DISPLAY_FLAG_SHOULD_SHOW_SYSTEM_DECORATIONS
 import com.ynk.virtualdisplay.data.repository.ConnectionStatus
 import com.ynk.virtualdisplay.data.repository.IDisplayRepository
 import com.ynk.virtualdisplay.overlay.OverlayService
@@ -108,6 +109,7 @@ class HassleController(
         height: Int,
         dpi: Int,
         delaySec: Int,
+        systemDecorations: Boolean,
         log: (String) -> Unit,
     ) {
         if (slots.isEmpty()) {
@@ -160,15 +162,26 @@ class HassleController(
                     h = size.y
                 }
                 log("  Hassle $slot: использую уже созданный дисплей #$displayId")
+                // Display.FLAG_SHOULD_SHOW_SYSTEM_DECORATIONS = 1 shl 6
+                if (!systemDecorations && (existing.flags and (1 shl 6)) != 0) {
+                    log("  Hassle $slot: у этого дисплея включён системный интерфейс. Нажмите «Остановить всё» и запустите снова, чтобы он создался без него.")
+                }
             } else {
-                val created = repository.createDisplay(HassleConfig.displayName(slot), width, height, dpi)
+                val created = repository.createDisplay(
+                    HassleConfig.displayName(slot),
+                    width,
+                    height,
+                    dpi,
+                    // Без системного интерфейса на дисплее MIUI не поднимает на нём второй лаунчер, статус-бар и обои
+                    excludeFlags = if (systemDecorations) 0 else VIRTUAL_DISPLAY_FLAG_SHOULD_SHOW_SYSTEM_DECORATIONS,
+                )
                 val id = created.getOrNull()
                 if (id == null) {
                     log("  Hassle $slot: не удалось создать дисплей: ${created.exceptionOrNull()?.message}")
                     continue
                 }
                 displayId = id
-                log("  Hassle $slot: дисплей #$displayId ${width}x$height")
+                log("  Hassle $slot: дисплей #$displayId ${width}x$height" + if (systemDecorations) "" else " (без системного интерфейса)")
             }
             OverlayService.show(context, displayId, "Hassle $slot", w, h, index, pkg)
             prepared.add(Triple(slot, displayId, pkg))
