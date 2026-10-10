@@ -4,7 +4,6 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Color
 import android.graphics.PixelFormat
-import android.graphics.SurfaceTexture
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
@@ -13,7 +12,8 @@ import android.view.Gravity
 import android.view.InputDevice
 import android.view.MotionEvent
 import android.view.Surface
-import android.view.TextureView
+import android.view.SurfaceHolder
+import android.view.SurfaceView
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
@@ -111,7 +111,7 @@ class OverlayWindow(
     private val collapseButton = TextView(context)
     private val closeButton = TextView(context)
     private val content = FrameLayout(context)
-    private val textureView = TextureView(context)
+    private val surfaceView = SurfaceView(context)
     private val resizeHandle = View(context)
 
     private val params = WindowManager.LayoutParams(
@@ -206,10 +206,14 @@ class OverlayWindow(
         header.addView(closeButton, buttonParams(30))
         setupHeaderDrag()
 
-        textureView.surfaceTextureListener = object : TextureView.SurfaceTextureListener {
-            override fun onSurfaceTextureAvailable(st: SurfaceTexture, width: Int, height: Int) {
-                st.setDefaultBufferSize(vdWidth, vdHeight)
-                val s = Surface(st)
+        // SurfaceView вместо TextureView: кадр идёт прямо в композитор системы (SurfaceFlinger), без промежуточной
+        // перерисовки в нашем приложении на каждый кадр. Буфер имеет размер виртуального дисплея, а масштаб под
+        // размер окна делает композитор.
+        surfaceView.holder.setFormat(PixelFormat.RGBA_8888)
+        surfaceView.holder.setFixedSize(vdWidth, vdHeight)
+        surfaceView.holder.addCallback(object : SurfaceHolder.Callback {
+            override fun surfaceCreated(holder: SurfaceHolder) {
+                val s = holder.surface
                 surface = s
                 scope.launch(Dispatchers.Main.immediate) {
                     val r = repository.setDisplaySurface(displayId, s)
@@ -217,31 +221,25 @@ class OverlayWindow(
                 }
             }
 
-            override fun onSurfaceTextureSizeChanged(st: SurfaceTexture, width: Int, height: Int) {}
+            override fun surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) {}
 
-            override fun onSurfaceTextureDestroyed(st: SurfaceTexture): Boolean {
+            override fun surfaceDestroyed(holder: SurfaceHolder) {
                 val old = surface
                 surface = null
                 // null: remove() уже вернул дисплей на запасную поверхность. Повторный сброс здесь мог бы
                 // перебить поверхность нового окна, если оно успело подключиться к этому же дисплею.
-                if (old == null) return true
+                if (old == null) return
+                // Поверхностью владеет SurfaceView, сами её не освобождаем
                 AppScope.scope.launch(Dispatchers.Main.immediate) {
-                    try {
-                        // null -> сервис вернёт дисплею запасную поверхность, игра продолжит работать
-                        repository.setDisplaySurface(displayId, null)
-                    } finally {
-                        old?.release()
-                    }
+                    // null -> сервис вернёт дисплею запасную поверхность, игра продолжит работать
+                    repository.setDisplaySurface(displayId, null)
                 }
-                return true
             }
-
-            override fun onSurfaceTextureUpdated(st: SurfaceTexture) {}
-        }
-        textureView.setOnTouchListener { v, event -> forwardTouch(v, event) }
+        })
+        surfaceView.setOnTouchListener { v, event -> forwardTouch(v, event) }
 
         content.addView(
-            textureView,
+            surfaceView,
             FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT),
         )
         resizeHandle.setBackgroundColor(0x80FFFFFF.toInt())
@@ -365,7 +363,7 @@ class OverlayWindow(
 
     private fun toggleCollapsed() {
         collapsed = !collapsed
-        // GONE уничтожает SurfaceTexture -> дисплей уходит на запасную поверхность (экономит батарею),
+        // GONE уничтожает поверхность SurfaceView -> дисплей уходит на запасную поверхность (экономит батарею),
         // при разворачивании окно снова подключается к дисплею.
         content.visibility = if (collapsed) View.GONE else View.VISIBLE
         applySize(widthPx)
@@ -509,17 +507,12 @@ class OverlayWindow(
             Log.w(TAG, "removeView failed", e)
         }
         // Дисплей возвращаем на запасную поверхность сразу и в области процесса. Раньше это делал
-        // колбэк TextureView уже после остановки сервиса, когда его корутины отменены, и дисплей оставался
+        // колбэк surfaceDestroyed уже после остановки сервиса, когда его корутины отменены, и дисплей оставался
         // привязан к уничтоженной поверхности (игра шла в фоне, но кадры уходили в никуда).
-        val old = surface
-        surface = null
-        if (old != null) {
+        if (surface != null) {
+            surface = null
             AppScope.scope.launch(Dispatchers.Main.immediate) {
-                try {
-                    repository.setDisplaySurface(displayId, null)
-                } finally {
-                    old.release()
-                }
+                repository.setDisplaySurface(displayId, null)
             }
         }
     }
