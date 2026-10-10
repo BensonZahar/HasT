@@ -48,6 +48,7 @@ class MainViewModel(
         _uiState.update { it.copy(
             shizukuState = if (granted) ShizukuState.Ready else ShizukuState.PermissionDenied
         ) }
+        if (granted) repository.bindService(appContext)
     }
 
     init {

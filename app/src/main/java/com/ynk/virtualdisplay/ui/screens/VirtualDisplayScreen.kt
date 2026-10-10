@@ -113,10 +113,13 @@ fun VirtualDisplayScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Консоль виртуальных дисплеев",
-                    style = MaterialTheme.typography.headlineSmall,
+                    text = "Виртуальные дисплеи",
+                    fontSize = 18.sp,
                     fontWeight = FontWeight.ExtraBold,
-                    color = MaterialTheme.colorScheme.onBackground
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    modifier = Modifier.weight(1f)
                 )
                 
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -126,7 +129,7 @@ fun VirtualDisplayScreen(
                             contentColor = MaterialTheme.colorScheme.error
                         )
                     ) {
-                        Text("Перезапуск сервиса", fontWeight = FontWeight.Bold)
+                        Text("Перезапуск", fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1, softWrap = false)
                     }
                     IconButton(
                         onClick = { viewModel.refreshDisplays(context) },
@@ -257,7 +260,7 @@ fun VirtualDisplayScreen(
         if (showErrorDialog) {
             AlertDialog(
                 onDismissRequest = { showErrorDialog = false },
-                title = { Text("\u521b\u5efa\u5931\u8d25", fontWeight = FontWeight.Bold) },
+                title = { Text("Ошибка", fontWeight = FontWeight.Bold) },
                 text = {
                     Text(
                         text = status,
@@ -268,16 +271,16 @@ fun VirtualDisplayScreen(
                 confirmButton = {
                     TextButton(onClick = {
                         val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                        clipboard.setPrimaryClip(ClipData.newPlainText("\u9519\u8bef\u65e5\u5fd7", status))
-                        Toast.makeText(context, "\u5df2\u590d\u5236", Toast.LENGTH_SHORT).show()
+                        clipboard.setPrimaryClip(ClipData.newPlainText("Журнал ошибки", status))
+                        Toast.makeText(context, "Скопировано", Toast.LENGTH_SHORT).show()
                         showErrorDialog = false
                     }) {
-                        Text("\u590d\u5236")
+                        Text("Копировать")
                     }
                 },
                 dismissButton = {
                     TextButton(onClick = { showErrorDialog = false }) {
-                        Text("\u5173\u95ed")
+                        Text("Закрыть")
                     }
                 }
             )

@@ -11,9 +11,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import com.ynk.virtualdisplay.data.repository.ConnectionStatus
 import com.ynk.virtualdisplay.data.repository.IDisplayRepository
 import com.ynk.virtualdisplay.overlay.OverlayService
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withTimeoutOrNull
 
 /** Настройки, перенесённые из ПК-меню hassle_menu.pyw (PKGS, SETUP_APPS, SETUP_GLOBAL). */
 object HassleConfig {
@@ -110,6 +113,18 @@ class HassleController(
         if (slots.isEmpty()) {
             log("Не выбрано ни одного окна.")
             return
+        }
+        // Ждём подключения к сервису Shizuku (до 20 с), чтобы не падать с «Service not connected»
+        if (repository.connectionStatus.value != ConnectionStatus.CONNECTED) {
+            log("Жду подключения к сервису Shizuku...")
+            repository.bindService(context)
+            val ok = withTimeoutOrNull(20_000L) {
+                repository.connectionStatus.first { it == ConnectionStatus.CONNECTED }
+            }
+            if (ok == null) {
+                log("Сервис Shizuku не подключился. Проверьте, что Shizuku запущен и разрешение выдано.")
+                return
+            }
         }
         val packages = slots.joinToString(" ") { HassleConfig.PACKAGES[it - 1] }
 

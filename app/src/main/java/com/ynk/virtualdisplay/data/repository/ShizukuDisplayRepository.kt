@@ -54,7 +54,20 @@ class ShizukuDisplayRepository(private val context: Context) : IDisplayRepositor
         }
     }
 
+    /** true, пока кто-то (экран или окна) ждёт подключения к сервису Shizuku. */
+    private var wantBind = false
+    private var bindWatchdog: Job? = null
+
     init {
+        // Shizuku мог прислать binder уже после запуска приложения: подключаемся сразу, без ручного обновления
+        try {
+            Shizuku.addBinderReceivedListenerSticky(Shizuku.OnBinderReceivedListener {
+                if (wantBind) tryBindNow()
+            })
+        } catch (e: Throwable) {
+            Log.w(TAG, "addBinderReceivedListenerSticky failed", e)
+        }
+
         scope.launch {
             binder.connectionStatus.collect { status ->
                 Log.d(TAG, "[DIAGNOSTIC] Shizuku connection status updated: $status")
@@ -80,14 +93,63 @@ class ShizukuDisplayRepository(private val context: Context) : IDisplayRepositor
             displayManager?.registerDisplayListener(displayListener, null)
             Log.d(TAG, "DisplayListener registered in bindService")
         }
-        if (!isShizukuAvailable()) {
-            _connectionStatus.value = ConnectionStatus.ERROR
+        wantBind = true
+        tryBindNow()
+        startBindWatchdog()
+    }
+
+    /** Одна попытка подключиться. Если Shizuku ещё не готов, статус ERROR, а сторож повторит попытку. */
+    private fun tryBindNow() {
+        val ready = try {
+            Shizuku.pingBinder() && Shizuku.checkSelfPermission() == android.content.pm.PackageManager.PERMISSION_GRANTED
+        } catch (e: Throwable) {
+            false
+        }
+        if (!ready) {
+            if (_connectionStatus.value != ConnectionStatus.CONNECTED) {
+                _connectionStatus.value = ConnectionStatus.ERROR
+            }
             return
         }
         binder.bind()
     }
 
+    /**
+     * Сторож: пока подключения нет, каждые 2 с повторяет попытку (Shizuku мог стартовать позже,
+     * разрешение могли выдать после запуска, привязка могла зависнуть). Раньше приходилось жать «Перезапуск».
+     */
+    private fun startBindWatchdog() {
+        if (bindWatchdog?.isActive == true) return
+        bindWatchdog = scope.launch {
+            var bindingSince = 0L
+            while (isActive && wantBind) {
+                delay(2000)
+                when (_connectionStatus.value) {
+                    ConnectionStatus.CONNECTED -> bindingSince = 0L
+                    ConnectionStatus.BINDING -> {
+                        val now = System.currentTimeMillis()
+                        if (bindingSince == 0L) {
+                            bindingSince = now
+                        } else if (now - bindingSince > 10_000L) {
+                            // привязка зависла: сбрасываем и пробуем заново
+                            bindingSince = 0L
+                            binder.unbind()
+                            tryBindNow()
+                        }
+                    }
+                    else -> {
+                        bindingSince = 0L
+                        tryBindNow()
+                    }
+                }
+            }
+        }
+    }
+
     override fun unbindService() {
+        wantBind = false
+        bindWatchdog?.cancel()
+        bindWatchdog = null
         displayManager?.unregisterDisplayListener(displayListener)
         displayManager = null
         binder.unbind()
