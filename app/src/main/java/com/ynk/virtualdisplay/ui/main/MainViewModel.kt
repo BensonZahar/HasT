@@ -274,7 +274,7 @@ class MainViewModel(
 
     fun forceRestartService(context: Context) {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, statusMessage = "Force restarting service...") }
+            _uiState.update { it.copy(isLoading = true, statusMessage = "Перезапуск сервиса...") }
             try {
                 repository.destroyService()
             } catch (e: Exception) {

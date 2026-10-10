@@ -22,11 +22,11 @@ fun ShizukuPermissionScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        val title = if (state is ShizukuState.NotRunning) "Shizuku 未运行" else "未获得 Shizuku 权限"
+        val title = if (state is ShizukuState.NotRunning) "Shizuku не запущен" else "Нет разрешения Shizuku"
         val description = if (state is ShizukuState.NotRunning) {
-            "本应用需要 Shizuku 才能正常工作。请确保 Shizuku 服务已启动。"
+            "Приложению нужен Shizuku. Убедитесь, что сервис Shizuku запущен."
         } else {
-            "本应用需要 Shizuku 权限来执行系统级操作。请授予权限以继续。"
+            "Приложению нужно разрешение Shizuku для системных операций. Выдайте разрешение, чтобы продолжить."
         }
 
         Text(
@@ -48,15 +48,15 @@ fun ShizukuPermissionScreen(
         
         if (state is ShizukuState.NotRunning) {
             Button(onClick = onRetry) {
-                Text("重试检测")
+                Text("Проверить снова")
             }
         } else {
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 OutlinedButton(onClick = onRetry) {
-                    Text("重试检测")
+                    Text("Проверить снова")
                 }
                 Button(onClick = onRequestPermission) {
-                    Text("请求授权")
+                    Text("Запросить разрешение")
                 }
             }
         }

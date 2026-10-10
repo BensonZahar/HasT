@@ -77,7 +77,7 @@ fun AppSelectionDialog(onDismiss: () -> Unit, onAppSelected: (AppInfo) -> Unit) 
                             ) {
                                 Text(text = app.name, style = MaterialTheme.typography.bodyLarge)
                                 Text(
-                                    text = if (isRecent) "${app.packageName} • 最近启动" else app.packageName,
+                                    text = if (isRecent) "${app.packageName} • недавно запускалось" else app.packageName,
                                     style = MaterialTheme.typography.bodySmall,
                                     color = if (isRecent) MaterialTheme.colorScheme.primary else Color.Gray
                                 )

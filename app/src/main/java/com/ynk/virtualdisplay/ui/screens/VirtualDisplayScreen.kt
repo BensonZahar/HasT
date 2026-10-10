@@ -66,10 +66,10 @@ fun VirtualDisplayScreen(
     val presets = remember(context) {
         val dm = context.resources.displayMetrics
         listOf(
-            DisplayPreset("本机", dm.widthPixels, dm.heightPixels, dm.densityDpi),
-            DisplayPreset("手机 720p", 720, 1280, 320),
-            DisplayPreset("平板 2.5K", 2560, 1600, 320),
-            DisplayPreset("电视 1080p", 1920, 1080, 320)
+            DisplayPreset("Этот телефон", dm.widthPixels, dm.heightPixels, dm.densityDpi),
+            DisplayPreset("Телефон 720p", 720, 1280, 320),
+            DisplayPreset("Планшет 2.5K", 2560, 1600, 320),
+            DisplayPreset("ТВ 1080p", 1920, 1080, 320)
         )
     }
 
@@ -113,7 +113,7 @@ fun VirtualDisplayScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "虚拟显示控制台",
+                    text = "Консоль виртуальных дисплеев",
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.ExtraBold,
                     color = MaterialTheme.colorScheme.onBackground
@@ -126,7 +126,7 @@ fun VirtualDisplayScreen(
                             contentColor = MaterialTheme.colorScheme.error
                         )
                     ) {
-                        Text("重启服务", fontWeight = FontWeight.Bold)
+                        Text("Перезапуск сервиса", fontWeight = FontWeight.Bold)
                     }
                     IconButton(
                         onClick = { viewModel.refreshDisplays(context) },
@@ -157,11 +157,11 @@ fun VirtualDisplayScreen(
             ) {
                 val connectionStatus = uiState.connectionStatus
                 val (statusText, statusColor) = when (connectionStatus) {
-                    ConnectionStatus.CONNECTED -> "特权服务: 已连接" to Color(0xFF26A69A)
-                    ConnectionStatus.BINDING -> "特权服务: 正在绑定..." to Color(0xFFFFB74D)
-                    ConnectionStatus.DISCONNECTED -> "特权服务: 连接断开" to Color(0xFFEF5350)
-                    ConnectionStatus.ERROR -> "特权服务: 错误" to Color(0xFFEF5350)
-                    ConnectionStatus.IDLE -> "特权服务: 空闲" to Color(0xFF78909C)
+                    ConnectionStatus.CONNECTED -> "Сервис: подключён" to Color(0xFF26A69A)
+                    ConnectionStatus.BINDING -> "Сервис: подключение..." to Color(0xFFFFB74D)
+                    ConnectionStatus.DISCONNECTED -> "Сервис: отключён" to Color(0xFFEF5350)
+                    ConnectionStatus.ERROR -> "Сервис: ошибка" to Color(0xFFEF5350)
+                    ConnectionStatus.IDLE -> "Сервис: ожидание" to Color(0xFF78909C)
                 }
 
                 Box(
@@ -183,7 +183,7 @@ fun VirtualDisplayScreen(
 
                 val isError = status.startsWith("Error:")
                 Text(
-                    text = "提示: $status",
+                    text = "Подсказка: $status",
                     fontSize = 10.sp,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -199,7 +199,7 @@ fun VirtualDisplayScreen(
 
             // 4. 显示器列表头部
             Text(
-                text = "活跃屏幕列表",
+                text = "Активные экраны",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(bottom = 8.dp)
@@ -217,7 +217,7 @@ fun VirtualDisplayScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "暂无活跃的虚拟显示器",
+                        text = "Нет активных виртуальных дисплеев",
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Medium
@@ -300,7 +300,7 @@ fun VirtualDisplayScreen(
                         modifier = Modifier.padding(16.dp)
                     ) {
                         Text(
-                            text = "新建虚拟显示器",
+                            text = "Новый виртуальный дисплей",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
@@ -316,7 +316,7 @@ fun VirtualDisplayScreen(
                             OutlinedTextField(
                                 value = uiState.inputWidth,
                                 onValueChange = { viewModel.updateInputs(width = it) },
-                                label = { Text("宽度") },
+                                label = { Text("Ширина") },
                                 modifier = Modifier.weight(1f),
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                 singleLine = true,
@@ -325,7 +325,7 @@ fun VirtualDisplayScreen(
                             OutlinedTextField(
                                 value = uiState.inputHeight,
                                 onValueChange = { viewModel.updateInputs(height = it) },
-                                label = { Text("高度") },
+                                label = { Text("Высота") },
                                 modifier = Modifier.weight(1f),
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                 singleLine = true,
@@ -398,7 +398,7 @@ fun VirtualDisplayScreen(
                                 modifier = Modifier.weight(1f),
                                 shape = RoundedCornerShape(10.dp)
                             ) {
-                                Text("取消", fontWeight = FontWeight.Bold)
+                                Text("Отмена", fontWeight = FontWeight.Bold)
                             }
 
                             Button(
@@ -417,7 +417,7 @@ fun VirtualDisplayScreen(
                                         color = MaterialTheme.colorScheme.onPrimary
                                     )
                                 } else {
-                                    Text("创建并启动", fontWeight = FontWeight.Bold)
+                                    Text("Создать и запустить", fontWeight = FontWeight.Bold)
                                 }
                             }
                         }
@@ -443,12 +443,12 @@ fun VirtualDisplayScreen(
             ) {
                 Icon(
                     imageVector = Icons.Default.Add,
-                    contentDescription = "新建显示器"
+                    contentDescription = "Новый дисплей"
                 )
                 if (isFabExpanded) {
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = "新建显示器",
+                        text = "Новый дисплей",
                         fontWeight = FontWeight.Bold,
                         fontSize = 14.sp
                     )

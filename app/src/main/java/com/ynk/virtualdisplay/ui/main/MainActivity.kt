@@ -79,8 +79,8 @@ class MainActivity : ComponentActivity() {
                                 NavigationBarItem(
                                     selected = uiState.currentTab == ScreenTab.CONSOLE,
                                     onClick = { viewModel.switchTab(ScreenTab.CONSOLE) },
-                                    icon = { Icon(Icons.Default.Home, contentDescription = "控制台") },
-                                    label = { Text("控制台") }
+                                    icon = { Icon(Icons.Default.Home, contentDescription = "Консоль") },
+                                    label = { Text("Консоль") }
                                 )
                                 NavigationBarItem(
                                     selected = uiState.currentTab == ScreenTab.HASSLE,
@@ -91,8 +91,8 @@ class MainActivity : ComponentActivity() {
                                 NavigationBarItem(
                                     selected = uiState.currentTab == ScreenTab.SETTINGS,
                                     onClick = { viewModel.switchTab(ScreenTab.SETTINGS) },
-                                    icon = { Icon(Icons.Default.Settings, contentDescription = "设置") },
-                                    label = { Text("设置") }
+                                    icon = { Icon(Icons.Default.Settings, contentDescription = "Настройки") },
+                                    label = { Text("Настройки") }
                                 )
                             }
                         }

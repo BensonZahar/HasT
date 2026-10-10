@@ -141,7 +141,7 @@ fun DisplayItem(
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = "显示器 #${displayInfo.id}",
+                        text = "Дисплей #${displayInfo.id}",
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
@@ -149,7 +149,7 @@ fun DisplayItem(
                 }
                 
                 Text(
-                    text = if (isOrphan) "未接管" else "已连接",
+                    text = if (isOrphan) "не управляется" else "подключён",
                     fontSize = 11.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = accentColor,
@@ -188,9 +188,9 @@ fun DisplayItem(
                     )
                 } else {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("无画面预览", color = Color.Gray, fontSize = 12.sp)
+                        Text("Нет превью", color = Color.Gray, fontSize = 12.sp)
                         Spacer(modifier = Modifier.height(4.dp))
-                        Text("需要再次连接", color = Color.Gray.copy(alpha = 0.7f), fontSize = 10.sp)
+                        Text("Нужно подключиться снова", color = Color.Gray.copy(alpha = 0.7f), fontSize = 10.sp)
                     }
                 }
             }
@@ -207,7 +207,7 @@ fun DisplayItem(
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
             )
             Text(
-                text = "${width} × ${height} (${if (width > height) "横屏" else "竖屏"})",
+                text = "${width} × ${height} (${if (width > height) "альбомная" else "портретная"})",
                 fontSize = 11.sp,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
             )
@@ -250,7 +250,7 @@ fun DisplayItem(
                 ) {
                     Icon(Icons.AutoMirrored.Filled.List, contentDescription = null, modifier = Modifier.size(14.dp))
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text("启动", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    Text("Запуск", fontSize = 11.sp, fontWeight = FontWeight.Bold)
                 }
  
                 // 进入全屏按钮
@@ -266,7 +266,7 @@ fun DisplayItem(
                 ) {
                     Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(14.dp))
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text("操控", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    Text("Управление", fontSize = 11.sp, fontWeight = FontWeight.Bold)
                 }
             }
         }

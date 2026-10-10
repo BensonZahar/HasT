@@ -495,7 +495,7 @@ class DisplayActivity : ComponentActivity() {
                 val result = repository.injectInputWithDisplayId(event, displayId)
                 Log.d(TAG, "injectTouchEvent result: $result")
                 if (result.isFailure || result.getOrDefault(false).not()) {
-                    Log.e(TAG, result.exceptionOrNull()?.message ?: "触摸事件注入失败")
+                    Log.e(TAG, result.exceptionOrNull()?.message ?: "Не удалось передать касание")
                 }
             } finally {
                 event.recycle()
@@ -596,13 +596,13 @@ class DisplayActivity : ComponentActivity() {
             kotlinx.coroutines.withContext(Dispatchers.Main) {
                 val names = sortedAppList.map { app ->
                     if (app.packageName in recentPkgs) {
-                        "${app.name} (最近)"
+                        "${app.name} (недавнее)"
                     } else {
                         app.name
                     }
                 }.toTypedArray()
                 android.app.AlertDialog.Builder(this@DisplayActivity)
-                    .setTitle("选择要在该屏幕启动的应用")
+                    .setTitle("Выберите приложение для запуска на этом экране")
                     .setItems(names) { dialog, which ->
                         val selectedApp = sortedAppList[which]
                         val displayId = remoteDisplayId ?: return@setItems
@@ -610,7 +610,7 @@ class DisplayActivity : ComponentActivity() {
                             repository.launchApp(selectedApp.packageName, displayId)
                         }
                     }
-                    .setNegativeButton("取消", null)
+                    .setNegativeButton("Отмена", null)
                     .show()
             }
         }

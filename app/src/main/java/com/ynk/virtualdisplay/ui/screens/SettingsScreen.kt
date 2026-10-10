@@ -56,7 +56,7 @@ fun SettingsScreen(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Text(
-            text = "系统设置",
+            text = "Системные настройки",
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.ExtraBold,
             color = MaterialTheme.colorScheme.onBackground
@@ -80,7 +80,7 @@ fun SettingsScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "虚拟显示器 Flags 设置",
+                        text = "Флаги виртуального дисплея",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
@@ -96,7 +96,7 @@ fun SettingsScreen(
                             contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
                             modifier = Modifier.height(28.dp)
                         ) {
-                            Text("恢复默认", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            Text("Сбросить", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                         }
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
@@ -118,7 +118,7 @@ fun SettingsScreen(
                         supportedFlags.forEachIndexed { index, flag ->
                             SettingSwitchRow(
                                 title = flag.name,
-                                description = flag.description + " (最低 SDK: API ${flag.minSdk})",
+                                description = flag.description + " (минимум: API ${flag.minSdk})",
                                 checked = flagStates[flag.key] ?: flag.isDefaultEnabled,
                                 onCheckedChange = { isChecked ->
                                     flagStates[flag.key] = isChecked
@@ -146,7 +146,7 @@ fun SettingsScreen(
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
-                    text = "操作与手势设置",
+                    text = "Управление и жесты",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
@@ -158,8 +158,8 @@ fun SettingsScreen(
                     mutableStateOf(prefs.getBoolean("capture_back", false))
                 }
                 SettingSwitchRow(
-                    title = "捕获返回事件",
-                    description = "操作虚拟显示器时，拦截真实设备的返回手势或按键并传递到虚拟屏，防止退出投屏界面",
+                    title = "Перехват кнопки «Назад»",
+                    description = "При управлении виртуальным дисплеем жест или кнопка «Назад» телефона передаётся на виртуальный экран, чтобы не выходить из окна дисплея",
                     checked = captureBack,
                     onCheckedChange = { isChecked ->
                         captureBack = isChecked
@@ -181,7 +181,7 @@ fun SettingsScreen(
         ) {
             Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text(
-                    text = "服务状态与系统信息",
+                    text = "Состояние сервиса и системы",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
@@ -195,18 +195,18 @@ fun SettingsScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "特权服务连接",
+                        text = "Привилегированный сервис",
                         fontSize = 13.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     
                     val connectionStatus = uiState.connectionStatus
                     val (statusText, statusColor) = when (connectionStatus) {
-                        ConnectionStatus.CONNECTED -> "已连接" to Color(0xFF26A69A)
-                        ConnectionStatus.BINDING -> "绑定中..." to Color(0xFFFFB74D)
-                        ConnectionStatus.DISCONNECTED -> "断开" to Color(0xFFEF5350)
-                        ConnectionStatus.ERROR -> "错误" to Color(0xFFEF5350)
-                        ConnectionStatus.IDLE -> "空闲" to Color(0xFF78909C)
+                        ConnectionStatus.CONNECTED -> "Подключён" to Color(0xFF26A69A)
+                        ConnectionStatus.BINDING -> "Подключение..." to Color(0xFFFFB74D)
+                        ConnectionStatus.DISCONNECTED -> "Отключён" to Color(0xFFEF5350)
+                        ConnectionStatus.ERROR -> "Ошибка" to Color(0xFFEF5350)
+                        ConnectionStatus.IDLE -> "Ожидание" to Color(0xFF78909C)
                     }
 
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -227,10 +227,10 @@ fun SettingsScreen(
 
                 // 构建参数
                 val dirtyMark = if (BuildConfig.GIT_DIRTY) " ●dirty" else ""
-                SystemInfoRow("应用版本", "v${BuildConfig.VERSION_NAME} (code ${BuildConfig.VERSION_CODE})")
+                SystemInfoRow("Версия приложения", "v${BuildConfig.VERSION_NAME} (code ${BuildConfig.VERSION_CODE})")
                 SystemInfoRow("Git Commit", "${BuildConfig.GIT_HASH}$dirtyMark")
-                SystemInfoRow("构建时间", BuildConfig.BUILD_TIME)
-                SystemInfoRow("安卓 SDK 版本", "Android ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})")
+                SystemInfoRow("Время сборки", BuildConfig.BUILD_TIME)
+                SystemInfoRow("Версия Android", "Android ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})")
 
 
             }

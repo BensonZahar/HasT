@@ -43,7 +43,7 @@ interface IDisplayRepository {
     /**
      * 创建虚拟显示器 (挂起函数)
      */
-    suspend fun createDisplay(name: String, width: Int, height: Int, dpi: Int, extraFlags: Int = 0): Result<Int>
+    suspend fun createDisplay(name: String, width: Int, height: Int, dpi: Int): Result<Int>
 
     /**
      * 释放指定显示器 (挂起函数)
