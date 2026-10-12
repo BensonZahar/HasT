@@ -58,3 +58,11 @@
     .\nox_adb.exe shell "CLASSPATH=$apk app_process / com.ynk.virtualdisplay.tools.RunAsShell sh /sdcard/Android/data/moe.shizuku.privileged.api/start.sh"
 
 Первая команда `RunAsShell id` должна вывести `uid=2000(shell)`.
+
+### Nox: чёрный экран в окне Hassle
+Если окно создаётся, а картинки нет, включите вывод через SurfaceView (создайте файл-флаг и перезапустите окна):
+
+    .\nox_adb.exe shell mkdir -p /sdcard/Android/data/com.ynk.virtualdisplay/files
+    .\nox_adb.exe shell touch /sdcard/Android/data/com.ynk.virtualdisplay/files/surfaceview
+
+Отключить: удалить файл (`rm`). Без файла работает прежний TextureView.

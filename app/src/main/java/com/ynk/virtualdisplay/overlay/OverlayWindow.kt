@@ -13,6 +13,8 @@ import android.view.Gravity
 import android.view.InputDevice
 import android.view.MotionEvent
 import android.view.Surface
+import android.view.SurfaceHolder
+import android.view.SurfaceView
 import android.view.TextureView
 import android.view.View
 import android.view.ViewGroup
@@ -111,7 +113,15 @@ class OverlayWindow(
     private val collapseButton = TextView(context)
     private val closeButton = TextView(context)
     private val content = FrameLayout(context)
-    private val textureView = TextureView(context)
+    // Для эмуляторов (Nox): если рядом с приложением лежит файл флага, картинку выводим через SurfaceView
+    // (кадры собирает системный композитор), а не через TextureView (нужен GL приложения, в Nox он неполный).
+    // Включить: adb shell touch /sdcard/Android/data/com.ynk.virtualdisplay/files/surfaceview
+    private val useSurfaceView: Boolean = try {
+        java.io.File(context.getExternalFilesDir(null), "surfaceview").exists()
+    } catch (e: Exception) {
+        false
+    }
+    private val videoView: View = if (useSurfaceView) SurfaceView(context) else TextureView(context)
     private val resizeHandle = View(context)
 
     private val params = WindowManager.LayoutParams(
@@ -206,42 +216,68 @@ class OverlayWindow(
         header.addView(closeButton, buttonParams(30))
         setupHeaderDrag()
 
-        textureView.surfaceTextureListener = object : TextureView.SurfaceTextureListener {
-            override fun onSurfaceTextureAvailable(st: SurfaceTexture, width: Int, height: Int) {
-                st.setDefaultBufferSize(vdWidth, vdHeight)
-                val s = Surface(st)
-                surface = s
-                scope.launch(Dispatchers.Main.immediate) {
-                    val r = repository.setDisplaySurface(displayId, s)
-                    r.exceptionOrNull()?.let { Log.e(TAG, "setDisplaySurface($displayId) failed", it) }
-                }
-            }
-
-            override fun onSurfaceTextureSizeChanged(st: SurfaceTexture, width: Int, height: Int) {}
-
-            override fun onSurfaceTextureDestroyed(st: SurfaceTexture): Boolean {
-                val old = surface
-                surface = null
-                // null: remove() уже вернул дисплей на запасную поверхность. Повторный сброс здесь мог бы
-                // перебить поверхность нового окна, если оно успело подключиться к этому же дисплею.
-                if (old == null) return true
-                AppScope.scope.launch(Dispatchers.Main.immediate) {
-                    try {
-                        // null -> сервис вернёт дисплею запасную поверхность, игра продолжит работать
-                        repository.setDisplaySurface(displayId, null)
-                    } finally {
-                        old?.release()
+        val tv = videoView
+        if (tv is TextureView) {
+            tv.surfaceTextureListener = object : TextureView.SurfaceTextureListener {
+                override fun onSurfaceTextureAvailable(st: SurfaceTexture, width: Int, height: Int) {
+                    st.setDefaultBufferSize(vdWidth, vdHeight)
+                    val s = Surface(st)
+                    surface = s
+                    scope.launch(Dispatchers.Main.immediate) {
+                        val r = repository.setDisplaySurface(displayId, s)
+                        r.exceptionOrNull()?.let { Log.e(TAG, "setDisplaySurface($displayId) failed", it) }
                     }
                 }
-                return true
-            }
 
-            override fun onSurfaceTextureUpdated(st: SurfaceTexture) {}
+                override fun onSurfaceTextureSizeChanged(st: SurfaceTexture, width: Int, height: Int) {}
+
+                override fun onSurfaceTextureDestroyed(st: SurfaceTexture): Boolean {
+                    val old = surface
+                    surface = null
+                    // null: remove() уже вернул дисплей на запасную поверхность. Повторный сброс здесь мог бы
+                    // перебить поверхность нового окна, если оно успело подключиться к этому же дисплею.
+                    if (old == null) return true
+                    AppScope.scope.launch(Dispatchers.Main.immediate) {
+                        try {
+                            // null -> сервис вернёт дисплею запасную поверхность, игра продолжит работать
+                            repository.setDisplaySurface(displayId, null)
+                        } finally {
+                            if (!useSurfaceView) old?.release()
+                        }
+                    }
+                    return true
+                }
+
+                override fun onSurfaceTextureUpdated(st: SurfaceTexture) {}
+            }
+        } else if (tv is SurfaceView) {
+            tv.holder.setFixedSize(vdWidth, vdHeight)
+            tv.holder.addCallback(object : SurfaceHolder.Callback {
+                override fun surfaceCreated(holder: SurfaceHolder) {
+                    val s = holder.surface
+                    surface = s
+                    scope.launch(Dispatchers.Main.immediate) {
+                        val r = repository.setDisplaySurface(displayId, s)
+                        r.exceptionOrNull()?.let { Log.e(TAG, "setDisplaySurface($displayId) failed", it) }
+                    }
+                }
+
+                override fun surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) {}
+
+                override fun surfaceDestroyed(holder: SurfaceHolder) {
+                    // Surface принадлежит SurfaceView, сами её не освобождаем
+                    if (surface == null) return
+                    surface = null
+                    AppScope.scope.launch(Dispatchers.Main.immediate) {
+                        repository.setDisplaySurface(displayId, null)
+                    }
+                }
+            })
         }
-        textureView.setOnTouchListener { v, event -> forwardTouch(v, event) }
+        videoView.setOnTouchListener { v, event -> forwardTouch(v, event) }
 
         content.addView(
-            textureView,
+            videoView,
             FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT),
         )
         resizeHandle.setBackgroundColor(0x80FFFFFF.toInt())
@@ -518,7 +554,7 @@ class OverlayWindow(
                 try {
                     repository.setDisplaySurface(displayId, null)
                 } finally {
-                    old.release()
+                    if (!useSurfaceView) old.release()
                 }
             }
         }
