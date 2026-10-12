@@ -22,8 +22,6 @@
 - Переключатель «Системный интерфейс на дисплеях» (по умолчанию выключен): дисплеи Hassle создаются без статус-бара,
   навигации, обоев и лаунчера. Применяется к новым дисплеям: после смены нажмите «Остановить всё».
 
-- Картинка в окне выводится через SurfaceView (кадр идёт прямо в композитор системы, без перерисовки в приложении): меньше нагрузка на GPU и CPU при нескольких окнах.
-
 Окно «Убрать» не останавливает игру: дисплей остаётся и работает в фоне. «Остановить всё» закрывает игры и удаляет дисплеи.
 
 ## Сборка без Android Studio (GitHub Actions)
@@ -48,3 +46,15 @@
 ## Важно
 Код написан без возможности собрать и запустить его на устройстве. Если сборка или запуск упадёт,
 пришлите текст ошибки из Actions (или logcat), исправлю.
+
+## Эмулятор Nox (adbd от root)
+В Nox `adb shell` даёт uid 0, и Shizuku, запущенный через него, вызывает ошибку `packageName must match the calling uid`.
+Решение: стартовать Shizuku через `RunAsShell`, он сбрасывает uid до shell (2000) и делает exec команды.
+Команды (PowerShell, из папки `Nox\bin`):
+
+    $apk = (.\nox_adb.exe shell pm path com.ynk.virtualdisplay).Trim().Replace("package:","")
+    .\nox_adb.exe shell "CLASSPATH=$apk app_process / com.ynk.virtualdisplay.tools.RunAsShell id"
+    .\nox_adb.exe shell pkill -f shizuku_server
+    .\nox_adb.exe shell "CLASSPATH=$apk app_process / com.ynk.virtualdisplay.tools.RunAsShell sh /sdcard/Android/data/moe.shizuku.privileged.api/start.sh"
+
+Первая команда `RunAsShell id` должна вывести `uid=2000(shell)`.
